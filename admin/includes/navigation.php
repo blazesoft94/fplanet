@@ -57,9 +57,9 @@
                     <li>
                         <a href="users.php"><i class="fa fa-users "></i> Users </a>
                     </li>
-                    <!-- <li class="">
-                        <a href="comments.php"><i class="fa fa-fw fa-comments"></i> Comments</a>
-                    </li> -->
+                    <li class="">
+                        <a href="polls.php"><i class="fa fa-fw fa-comments"></i>Polls</a>
+                    </li>
                     <!-- <li>
                         <a href="bootstrap-grid.html"><i class="fa fa-fw fa-wrench"></i> Profile</a>
                     </li> -->

@@ -2,7 +2,7 @@
 session_start();
 include "includes/header.php";
 ?>
-<?php if(isset($_SESSION["login"]) && $_SESSION["role"]=="admin"){?>
+<?php if(isset($_SESSION["admin_login"]) && $_SESSION["role"]=="admin"){?>
 <?php 
 //delete post
 // deleteUser();

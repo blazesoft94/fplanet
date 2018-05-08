@@ -27,6 +27,7 @@ session_start();
             $incorrect = true;
         }
     }
+// session_destroy();
 ?>
 <!DOCTYPE html>
 <html lang="en">

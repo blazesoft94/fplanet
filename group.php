@@ -18,6 +18,22 @@ $group_id = "";
 if(isset($_GET["group_id"])) $group_id = $_GET["group_id"];
 
 include_once "includes/connect_db.php";
+
+if(isset($_POST["poll_button"])){
+	$poll_id = $_POST["poll_id"];
+	$user_id = $_POST["user_id"];
+	$option_id = $_POST["option_id"];
+
+	$poll_check_query = "select * from poll_votes where vote_poll_id = '$poll_id' and vote_user_id ='$user_id'";
+	$poll_check_result = $con->query($poll_check_query);
+	if($poll_check_result->num_rows==0){
+		$add_vote_query = "INSERT INTO `poll_votes` (`vote_id`, `vote_poll_id`, `vote_user_id`, `vote_option_id`) VALUES (NULL, '$poll_id', '$user_id', '$option_id');";
+		$con->query($add_vote_query);
+
+	}
+}
+
+
 if(isset($_POST["post_button"])){
 	// echo "\n\n------------------SSEEEEEEEEEEEETTTTTTT------------------\n\n";
 	// $pic = rand(1000,100000)."-".$_FILES['post_image']['name'];
@@ -568,21 +584,39 @@ if(!empty($group_id)){
 					$row = $result->fetch_assoc();
 				
 			?>
+			<form id="vote_form" action="<?php echo "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";?>" method="post">
 			<div class="ui-block">
 				
 				<div class="ui-block-title">
 					<h6 class="title">Group's Poll</h6>
 				</div>
+				<input type="text" name="poll_id" style="display:none;" value="<?php echo $row["poll_id"] ?>">
+				<input type="text" name="user_id" style="display:none;" value="<?php echo $id?>">
 				<div class="ui-block-content">
 					<ul class="widget w-pool">
 						<li>
 							<p><?php echo $row["poll_text"] ?></p>
 						</li>
 						<?php 
+						$tvq = "select * from poll_votes where vote_poll_id = '".$row["poll_id"]."'";
+						$tvq_result = $con->query($tvq);
+						$tvq_row = $tvq_result->fetch_assoc();
+						$total_votes = $tvq_result->num_rows;
 						$sql2 = "select * from poll_options where option_poll_id = '".$row["poll_id"]."'";
 						$result2 = $con->query($sql2);
 						if($result2->num_rows>0){
+							$cc = 0;
 							while($row2 = $result2->fetch_assoc()){
+								$option_votes_query = "select * from poll_votes where vote_option_id = '".$row2["option_id"]."'";
+								$option_votes_query_result = $con->query($option_votes_query);
+								$total_votes_in_option = $option_votes_query_result->num_rows;
+								// echo $total_votes_in_option. $row2["option_id"];
+								if($total_votes==0){
+									$tviop_perc = 0;
+								}
+								else{
+									$tviop_perc =(int) (($total_votes_in_option/$total_votes)*100);								
+								}
 						?>
 						<li>
 							<div class="skills-item">
@@ -591,23 +625,25 @@ if(!empty($group_id)){
 
 										<span class="radio">
 											<label>
-												<input type="radio" name="optionsRadios">
+												<input <?php echo ($cc==0) ? "checked='checked'" : "" ?> type="radio" name="option_id" value="<?php echo $row2["option_id"] ?>">
 											<?php echo $row2["option_text"] ?>
 											</label>
 										</span>
 									</span>
-									<span class="skills-item-count"><span class="count-animate" data-speed="1000" data-refresh-interval="50" data-to="62" data-from="0"></span><span class="units">62%</span></span>
+									<span class="skills-item-count"><span class="count-animate" data-speed="1000" data-refresh-interval="50" data-to="62" data-from="0"></span><span class="units"><?php echo $tviop_perc ?>%</span></span>
 								</div>
 								<div class="skills-item-meter">
-									<span class="skills-item-meter-active bg-primary" style="width: 62%"></span>
+									<span class="skills-item-meter-active bg-primary" style="width: <?php echo $tviop_perc ?>%"></span>
 								</div>
 							</div>
 						</li>
-							<?php }} ?>
+							<?php $cc++;}} ?>
 					</ul>
-					<a href="#" class="btn btn-md-2 btn-border-think custom-color c-grey full-width">Vote Now!</a>
+					<input type="text" style="display:none" value="abc" name="poll_button">
+					<a  href="javascript:{}" onclick="document.getElementById('vote_form').submit();" class="btn btn-md-2 btn-border-think custom-color c-grey full-width">Vote Now!</a>
 				</div>
 			</div> 
+			</form>
 				<?php }?>
 		</div>
 

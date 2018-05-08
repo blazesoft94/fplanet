@@ -16,7 +16,14 @@ if(isset($_GET["user_delete"])){
     }
 }
 
-if(isset($_POST["edit_title"])){
+if(isset($_GET["poll_delete"])){
+        $u_id = $_GET["poll_delete"];
+        $sql3 = "DELETE from polls where poll_id = '$u_id' ";
+        $con->query($sql3);
+        header("Location: polls.php");
+}
+
+if(isset($_POST["edit_poll"])){
     $id= $_POST["group_id"];
     $name = $_POST["group_name"];
     $about = $_POST["group_about"];
@@ -26,16 +33,24 @@ if(isset($_POST["edit_title"])){
     header("Location: groups.php");
     
 }
-if(isset($_POST["add_group"])){
-    // $id= $_POST["group_id"];
-    $name = $_POST["group_name-2"];
-    $about = $_POST["group_about-2"];
-    $auto_added = $_POST["group_auto_added"];
-    $group_type = $_POST["group_type"];
-    $admin_restricted = $_POST["group_admin_restricted"];
-    $sql = "INSERT INTO `groups` (`group_id`, `group_about`, `group_name`,`group_type`,`group_auto_added`,`group_admin_restricted`) VALUES (NULL, '$name', '$about','$group_type','$auto_added','$admin_restricted');";
+if(isset($_POST["add_poll"])){
+    $group_id= $_POST["group_id"];
+    $poll_text = $_POST["poll_text"];
+    $total_options_added = (int)$_POST["total_options_added"];
+    $options=[];
+    for($i=1; $i<=$total_options_added; $i++){
+        array_push($options, $_POST[("poll_option".$i)]);
+    }
+
+    $sql = "INSERT INTO `polls` (`poll_id`, `poll_group_id`, `poll_text`) VALUES (NULL, '$group_id', '$poll_text');";
     if($con->query($sql)==TRUE){
-        header("Location: groups.php");
+        $success = true;
+        $poll_id = $con->insert_id;
+        foreach($options as $opt){
+            $sql = "INSERT INTO `poll_options` (`option_id`, `option_poll_id`, `option_text`) VALUES (NULL, '$poll_id', '$opt');";
+            $con->query($sql);
+        }
+        // header("Location: groups.php");
     }
     
 }
@@ -66,40 +81,40 @@ deletePost();
                         </h1>
                         <div class="row">
                             <div class="col-md-12">
-                                <button class="btn btn-primary" data-toggle='modal' data-target='#add_group_modal'>Add Group</button>
+                                <button class="btn btn-primary" data-toggle='modal' data-target='#add_poll_modal'>Add Poll</button>
                                 <table class="table table-bordered table-striped table-hover">
                                     <thead class="thead-dark">
                                         <tr>
                                             <th>Id</th>
-                                            <th>Group Name</th>
-                                            <th>Group About</th>
-                                            <th>Total users</th>
-                                            <th>View/Edit</th>
+                                            <th>Poll text</th>
+                                            <th>Poll Group</th>
+                                            <th>Total Options</th>
+                                            <!-- <th>View/Edit</th> -->
                                             <th>Delete</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                     <?php 
                                         //Display Posts
-                                        $sql = "SELECT * from groups ORDER BY group_id desc";
+                                        $sql = "SELECT * from polls,groups where poll_group_id = group_id  ORDER BY poll_id desc";
                                         $result = $con->query($sql);
                                         if($result->num_rows>0){
                                             $count=0;
                                             while($row = $result->fetch_assoc()){
                                                 $count++;
-                                                $p_id = $row["group_id"];
-                                                    $sql2 = "SELECT * from registrations where registration_group_id = '$p_id'";
+                                                $p_id = $row["poll_id"];
+                                                    $sql2 = "SELECT * from poll_options where option_poll_id = '$p_id'";
                                                     $result2 = $con->query($sql2);
-                                                $p_users = $result2->num_rows;
-                                                $p_name = $row['group_name'];
-                                                $p_about = $row['group_about'];
+                                                $p_total_options = $result2->num_rows;
+                                                $p_name = $row['poll_text'];
+                                                $p_group = $row['group_name'];
                                                 echo "<tr>";
                                                 echo "<th scope='row'>{$p_id}</th>";
                                                 echo "<td>{$p_name}</td>";
-                                                echo "<td>{$p_about}</td>";
-                                                echo "<td><a href='#' class='view-users-group' data-toggle='modal' data-target='#user_group_modal' data-groupid='$p_id'> {$p_users}</a></td>";
-                                                echo "<td><a href='#' type='button' class='' data-toggle='modal' data-id='$p_id' data-target='#player_edit_modal' data-name='$p_name'  data-about='$p_about' >View</a></td>";
-                                                echo "<td><a href='delete_group.php?group_id=$p_id'>Delete</a></td>";
+                                                echo "<td>{$p_group}</td>";
+                                                echo "<td>{$p_total_options}</td>";
+                                                // echo "<td><a href='#' type='button' class='' data-toggle='modal' data-id='$p_id' data-target='#poll_edit_modal' >View</a></td>";
+                                                echo "<td><a href='polls.php?poll_delete=$p_id'>Delete</a></td>";
                                                 echo "</tr>";
                                             }
                                         }
@@ -140,7 +155,7 @@ deletePost();
                 <div class="modal-body">
                     <div class="form-group">
                         <label for="title" class="col-form-label">Group Id:</label>
-                        <p style="background:#ccc;x" type disbaled class="form-control" id="group-id">
+                        <p style="background:#ccc;" type disbaled class="form-control" id="group-id">
                     </div>
                     <div class="form-group">
                         <label for="title" class="col-form-label">Group Name:</label>
@@ -169,11 +184,11 @@ deletePost();
         </div>
     </div>
 </div>
-<div class="modal fade" id="add_group_modal" tabindex="-1" role="dialog" aria-labelledby="editModalLabel" aria-hidden="true">
+<div class="modal fade" id="add_poll_modal" tabindex="-1" role="dialog" aria-labelledby="editModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h4 style="display:inline;" class="display-3 text-primary modal-title" id="exampleModalLabel">Add Group</h4>
+                <h4 style="display:inline;" class="display-3 text-primary modal-title" id="exampleModalLabel">Add Poll</h4>
                 <button type="d-inline button" class="close" data-dismiss="modal" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
                 </button>
@@ -181,44 +196,40 @@ deletePost();
             <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" enctype="multipart/form-data">
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="title" class="col-form-label">Group Id:</label>
-                        <p style="background:#ccc;x" type disbaled class="form-control" id="group-id-2">Auto Added</p>
+                        <label for="title" class="col-form-label">PollId:</label>
+                        <p style="background:#ccc;" type disbaled class="form-control" id="group-id-2">Auto Added</p>
                     </div>
                     <div class="form-group">
                         <label for="title" class="col-form-label">Group Name:</label>
-                        <input type="text" class="form-control" id="group-name-2" name="group_name-2">
-                    </div>
-                    <div class="form-group">
-                        <label for="title" class="col-form-label">Group About:</label>
-                        <input type="text" class="form-control" id="group-about-2" name="group_about-2">
-                    </div>
-                    <div class="form-group">
-                        <label for="title" class="col-form-label">User Auto Added:</label>
-                        <select type="text" class="form-control" id="group-auto-added2" name="group_auto_added">
-                                <option value="No">No</option>
-                                <option value="Yes">Yes</option>
+                        <select class="form-control" name="group_id" id="">
+                            <?php 
+                                $group_query = "SELECT * FROM polls right join groups on poll_group_id = group_id where poll_id IS NULL and group_id != 1";
+                                $group_result = $con->query($group_query);
+                                if($group_result->num_rows>0){
+                                    while($group_row = $group_result->fetch_assoc()){
+                                        
+                                ?>    
+                                    <option value="<?php echo $group_row['group_id'] ?>"><?php echo $group_row['group_name'] ?></option>
+                                <?php }}?>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="title" class="col-form-label">Only Admin Can Post</label>
-                        <select class="form-control" id="group-admin-restricted" name="group_admin_restricted">
-                            <option value="No">No</option>
-                            <option value="Yes">Yes</option>
-                        </select>
+                        <label for="title" class="col-form-label">Poll Question:</label><textarea cols="8" rows="3" type="text" class="form-control" id="group-about-2" name="poll_text"></textarea>
+                        
                     </div>
+                    <div id="options2">
+                        <input type="text" name="total_options_added" style="display:none;" value="0" id="total-options-added2">
+                    </div>
+                    
+                    
                     <div class="form-group">
-                        <label for="title" class="col-form-label">Group Type:</label>
-                        <select type="text" class="form-control" id="group-type" name="group_type">
-                                <option value="Major">Major</option>
-                                <option value="Society">Society</option>
-                                <option value="General">General</option>
-                        </select>
+                        <button id="add-option2" class="btn btn-warning">+ Add Option</button>
                     </div>
                     
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" name="add_group" class="btn btn-primary">Save</button>
+                    <button type="submit" name="add_poll" class="btn btn-primary">Save</button>
                 </div>
             </form>
         </div>
@@ -249,7 +260,6 @@ deletePost();
         </div>
     </div>
 </div>
-
 
 <script>
     var linkElement = document.createElement("link");
@@ -285,6 +295,14 @@ deletePost();
                 console.log("error",e);
             }
         })
+    });
+    $("#add-option2").click(function(e){
+        e.preventDefault();
+        var tOptions = parseInt($("#total-options-added2").val());
+        tOptions+=1;
+        $("#total-options-added2").val(tOptions);
+        $("#options2").append('<div class="form-group"><label for="title" class="col-form-label">Option '+tOptions+':</label><textarea cols="8" rows="2" type="text" class="form-control" id="" name="poll_option'+tOptions+'"></textarea></div>');
+
     });
 
 </script>
